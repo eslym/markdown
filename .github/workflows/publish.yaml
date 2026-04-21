@@ -1,0 +1,52 @@
+name: Build and Publish
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+
+      - run: |
+          bun install 
+          bun test
+          bun run build
+
+      - id: tag
+        run: bun -e "$SCRIPT"
+        env:
+          SCRIPT: |
+            if (!Bun.env.GITHUB_REF?.startsWith('refs/tags/')) {
+                throw new Error('This script should only be run in a GitHub Actions environment with a tag.');
+            }
+
+            const semver = Bun.env.GITHUB_REF.replace('refs/tags/', '');
+
+            const tag = semver.includes('-') ? 'next' : 'latest';
+
+            console.log('tag:', tag);
+            if (Bun.env.GITHUB_OUTPUT) {
+                Bun.write(Bun.env.GITHUB_OUTPUT, `tag=${tag}`);
+            } else {
+                console.log(`::set-output name=tag::${tag}`);
+            }
+
+            const pkg = await Bun.file('package.json').json();
+            pkg.version = Bun.env.GITHUB_REF_NAME;
+            await Bun.write('package.json', JSON.stringify(pkg, null, 2));
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24.x"
+          registry-url: "https://registry.npmjs.org"
+      - run: npm publish --access public --tag ${{ steps.tag.outputs.tag }}

@@ -1,0 +1,50 @@
+{
+	"name": "@eslym/markdown",
+	"description": "A markdown parser for my own use. Built on top of micromark and mdast.",
+	"module": "src/index.ts",
+	"author": {
+		"name": "0nepeop1e",
+		"email": "engshun.lim@gmail.com",
+		"url": "https://github.com/eslym"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/eslym/markdown.git"
+	},
+	"scripts": {
+		"build": "bun --bun build.ts",
+		"test": "bun test",
+		"format": "prettier --write ."
+	},
+	"exports": {
+		".": {
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.cjs",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"files": [
+		"./dist/**"
+	],
+	"devDependencies": {
+		"@types/bun": "latest",
+		"@types/he": "^1.2.3",
+		"@types/mdast": "^4.0.4",
+		"@types/unist": "^3.0.3",
+		"he": "^1.2.0",
+		"mdast-util-from-markdown": "^2.0.3",
+		"mdast-util-frontmatter": "^2.0.1",
+		"mdast-util-gfm": "^3.1.0",
+		"mdast-util-math": "^3.0.0",
+		"micromark-extension-frontmatter": "^2.0.0",
+		"micromark-extension-gfm": "micromark/micromark-extension-gfm",
+		"micromark-extension-math": "^3.1.0",
+		"prettier": "^3.8.3",
+		"rollup": "^4.60.2",
+		"rollup-plugin-dts": "^6.4.1"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"type": "module"
+}
