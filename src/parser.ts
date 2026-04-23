@@ -2,10 +2,12 @@ import { fromMarkdown, type Options as FromMarkdownOptions } from "mdast-util-fr
 import { gfm } from "micromark-extension-gfm";
 import { math } from "micromark-extension-math";
 import { frontmatter } from "micromark-extension-frontmatter";
+import { directive } from "micromark-extension-directive";
 
 import { gfmFromMarkdown } from "mdast-util-gfm";
 import { mathFromMarkdown } from "mdast-util-math";
 import { frontmatterFromMarkdown } from "mdast-util-frontmatter";
+import { directiveFromMarkdown } from "mdast-util-directive";
 
 import type {
 	Definition,
@@ -46,6 +48,7 @@ export interface SyntaxOptions {
 	thematicBreak?: boolean;
 	blockquote?: boolean;
 	html?: boolean;
+	directive?: boolean;
 	/**
 	 * Setting this to false will fully disable GFM support including strikethrough
 	 */
@@ -89,6 +92,10 @@ function prepareExtensions(syntax: SyntaxOptions = {}) {
 	if (syntax.math !== false) {
 		options.extensions!.push(math());
 		options.mdastExtensions!.push(mathFromMarkdown());
+	}
+	if (syntax.directive === true) {
+		options.extensions!.push(directive());
+		options.mdastExtensions!.push(directiveFromMarkdown());
 	}
 	options.mdastExtensions!.push(buildDisableExtensions(syntax));
 	return options;

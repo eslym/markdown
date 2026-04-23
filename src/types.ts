@@ -150,6 +150,24 @@ export namespace MD {
 		type: "comment";
 	}
 
+	export interface ContainerDirective extends Parent {
+		type: "containerDirective";
+		name: string;
+		attributes?: Nullable<Record<string, Nullable<string>>>;
+	}
+
+	export interface leafDirective extends Parent {
+		type: "leafDirective";
+		name: string;
+		attributes?: Nullable<Record<string, Nullable<string>>>;
+	}
+
+	export interface textDirective extends Parent {
+		type: "textDirective";
+		name: string;
+		attributes?: Nullable<Record<string, Nullable<string>>>;
+	}
+
 	export interface NodeMap {
 		blockquote: BlockQuote;
 		break: Break;
@@ -178,6 +196,9 @@ export namespace MD {
 		math: Math;
 		element: Element;
 		comment: Comment;
+		containerDirective: ContainerDirective;
+		leafDirective: leafDirective;
+		textDirective: textDirective;
 	}
 
 	export type Nodes = NodeMap[keyof NodeMap];
@@ -190,7 +211,7 @@ export namespace MD {
 	}
 }
 
-// type temp = Expand<RootContentMap["math"]>;
+// type temp = Expand<RootContentMap["leafDirective"]>;
 
 // type Expand<T> = {
 // 	[K in keyof T]: T[K];
