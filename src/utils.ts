@@ -24,7 +24,11 @@ export function collectText(input: MD.Document | MD.Nodes | MD.Nodes[]): string 
 }
 
 function collectNodeText(node: MD.Document | MD.Nodes): string {
-	if (node.type === "text") {
+	if (node.type === "comment") {
+		return "";
+	}
+
+	if ("value" in node && typeof node.value === "string") {
 		return node.value;
 	}
 
@@ -95,6 +99,9 @@ const blockTypes = new Set<string>([
 	"table",
 	"tableRow",
 	"tableCell",
+	"containerDirective",
+	"leafDirective",
+	"math",
 ] satisfies (keyof RootContentMap)[]);
 
 const blockElementTags = new Set([
