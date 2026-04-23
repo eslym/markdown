@@ -1,5 +1,8 @@
 import { setWhenUnset } from "./utils";
 import { decode } from "he";
+import type { Extension as FromMarkdownExtension } from "mdast-util-from-markdown";
+import type { Extension as MicromarkExtension } from "micromark-util-types";
+import type { Element, Parent, Root } from "mdast";
 
 const tagStart = /^<\/?([a-zA-Z][a-zA-Z0-9-]*)/g;
 const attrName = /^\s*([^\s"'<>\/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
@@ -110,6 +113,7 @@ const disallowedHeadingTags = new Set([
 const disallowedListItemTags = new Set(["li"]);
 
 const disallowedAnchorTags = new Set(["a"]);
+const droppedStructuralTags = new Set(["html", "head", "body"]);
 
 export function disallowedInParagraph(tagName: string): boolean {
 	return disallowedParagraphTags.has(tagName.toLowerCase());
@@ -275,6 +279,229 @@ export function* tokenizeHTML(html: string): Generator<TagOpen | TagClose | Comm
 		};
 		index += 1;
 	}
+}
+
+export interface HtmlFromMarkdownOptions {
+	warnForDisallowedElement?: boolean;
+}
+
+export function htmlMicromark(): MicromarkExtension {
+	return {};
+}
+
+export function htmlFromMarkdown(options: HtmlFromMarkdownOptions = {}): FromMarkdownExtension {
+	const warnForDisallowedElement = options.warnForDisallowedElement !== false;
+
+	return {
+		transforms: [
+			(tree) => {
+				transformHTMLNodes(tree, [], warnForDisallowedElement);
+				return tree;
+			},
+		],
+	};
+}
+
+interface ContextNode {
+	type: string;
+	tagName?: string | null;
+}
+
+function transformHTMLNodes(
+	node: Root | Parent,
+	ancestors: ContextNode[],
+	warnForDisallowedElement: boolean,
+) {
+	const stacks: Element[] = [
+		{
+			type: "element",
+			tagName: "__root__",
+			children: [],
+		},
+	];
+
+	for (const child of node.children) {
+		if (child.type === "html") {
+			const offset = child.position?.start.offset ?? child.pos?.[0] ?? 0;
+			consumeHtmlTokens(
+				child.value,
+				offset,
+				[...ancestors, node as ContextNode],
+				warnForDisallowedElement,
+				stacks,
+			);
+			continue;
+		}
+
+		last(stacks).children.push(child);
+	}
+
+	flushUnclosed(stacks);
+	node.children = stacks[0]!.children;
+
+	for (const child of node.children) {
+		if ("children" in child) {
+			transformHTMLNodes(child, [...ancestors, node as ContextNode], warnForDisallowedElement);
+		}
+	}
+}
+
+function consumeHtmlTokens(
+	raw: string,
+	offset: number,
+	ancestors: ContextNode[],
+	warnForDisallowedElement: boolean,
+	stacks: Element[],
+) {
+	tokens: for (const token of tokenizeHTML(raw)) {
+		token.pos[0] += offset;
+		token.pos[1] += offset;
+
+		switch (token.type) {
+			case "text":
+				last(stacks).children.push({
+					type: "text",
+					value: token.value,
+					pos: token.pos,
+				});
+				break;
+			case "comment":
+				last(stacks).children.push({
+					type: "comment",
+					value: token.value,
+					pos: token.pos,
+				});
+				break;
+			case "open": {
+				if (droppedStructuralTags.has(token.tagName)) {
+					continue tokens;
+				}
+
+				if (token.selfClosing || selfClosingTags.has(token.tagName)) {
+					last(stacks).children.push({
+						type: "element",
+						tagName: token.tagName,
+						properties: token.properties,
+						children: [],
+						pos: token.pos,
+					});
+					continue tokens;
+				}
+
+				const parents = [...ancestors, ...stacks.slice(1)];
+				if (!withinTemplate(parents)) {
+					if (withinParagraph(parents) && disallowedInParagraph(token.tagName)) {
+						warnDisallowedElement(warnForDisallowedElement, token.tagName, "paragraph", token.pos);
+						continue tokens;
+					}
+					if (withinHeading(parents) && disallowedInHeading(token.tagName)) {
+						warnDisallowedElement(warnForDisallowedElement, token.tagName, "heading", token.pos);
+						continue tokens;
+					}
+					if (withinListItem(parents) && disallowedInListItem(token.tagName)) {
+						warnDisallowedElement(warnForDisallowedElement, token.tagName, "list item", token.pos);
+						continue tokens;
+					}
+					if (withinAnchor(parents) && disallowedInAnchor(token.tagName)) {
+						warnDisallowedElement(warnForDisallowedElement, token.tagName, "anchor", token.pos);
+						continue tokens;
+					}
+				}
+
+				stacks.push({
+					type: "element",
+					tagName: token.tagName,
+					properties: token.properties,
+					children: [],
+					pos: token.pos,
+				});
+				break;
+			}
+			case "close": {
+				if (droppedStructuralTags.has(token.tagName)) {
+					continue tokens;
+				}
+
+				const match = stacks.findLastIndex((el) => el.tagName === token.tagName);
+				if (match === -1) break;
+
+				for (let i = stacks.length - 1; i >= match; i--) {
+					const element = stacks.pop()!;
+					if (i === match) {
+						if (element.pos) {
+							element.pos[1] = token.pos[1];
+						}
+					} else {
+						closeUnclosedTag(element);
+					}
+					last(stacks).children.push(element);
+				}
+				break;
+			}
+		}
+	}
+}
+
+function flushUnclosed(stacks: Element[]) {
+	while (stacks.length > 1) {
+		const element = stacks.pop()!;
+		closeUnclosedTag(element);
+		last(stacks).children.push(element);
+	}
+}
+
+function last<T>(arr: T[]): T {
+	return arr[arr.length - 1]!;
+}
+
+function closeUnclosedTag(element: Element) {
+	if (element.children.length === 0 || !element.pos) return;
+	const lastChild = element.children[element.children.length - 1];
+	if (!lastChild?.pos) return;
+	element.pos[1] = lastChild.pos[1];
+}
+
+function withinParagraph(parents: ContextNode[]): boolean {
+	return parents.some(
+		(node) =>
+			node.type === "paragraph" || (node.type === "element" && node.tagName?.toLowerCase() === "p"),
+	);
+}
+
+function withinHeading(parents: ContextNode[]): boolean {
+	return parents.some(
+		(node) =>
+			node.type === "heading" || (node.type === "element" && /^h[1-6]$/i.test(node.tagName ?? "")),
+	);
+}
+
+function withinListItem(parents: ContextNode[]): boolean {
+	return parents.some(
+		(node) =>
+			node.type === "listItem" || (node.type === "element" && node.tagName?.toLowerCase() === "li"),
+	);
+}
+
+function withinAnchor(parents: ContextNode[]): boolean {
+	return parents.some((node) => node.type === "element" && node.tagName?.toLowerCase() === "a");
+}
+
+function withinTemplate(parents: ContextNode[]): boolean {
+	return parents.some(
+		(node) => node.type === "element" && node.tagName?.toLowerCase() === "template",
+	);
+}
+
+function warnDisallowedElement(
+	enabled: boolean,
+	tagName: string,
+	type: string,
+	pos: [number, number],
+) {
+	if (!enabled) return;
+	console.warn(
+		`Warning: <${tagName}> is not allowed within a ${type}. Found at position ${pos[0]}-${pos[1]}. This tag will be ignored.`,
+	);
 }
 
 function findRawTextCloseTag(
