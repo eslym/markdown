@@ -9,7 +9,7 @@ import { mathFromMarkdown } from "mdast-util-math";
 import { frontmatterFromMarkdown } from "mdast-util-frontmatter";
 import { directiveFromMarkdown } from "mdast-util-directive";
 
-import type { Definition, FootnoteDefinition, Root, RootContentMap } from "mdast";
+import type { Root, RootContent, RootContentMap } from "mdast";
 import type { Position } from "unist";
 import { Walker } from "./walker";
 import { htmlFromMarkdown, htmlMicromark } from "./html";
@@ -101,11 +101,11 @@ interface AllNodeMap extends RootContentMap {
 	[key: string]: Root | RootContent;
 }
 
-export function parseMarkdown(markdown: string, options: ParseOptions = {}) {
+export function parseMarkdown(markdown: string, options: ParseOptions = {}): MD.Document {
 	const ast = fromMarkdown(markdown, prepareExtensions(options));
 	let metaString: string | undefined;
-	const definitions: Record<string, Definition> = {};
-	const footnotes: Record<string, FootnoteDefinition> = {};
+	const definitions: Record<string, MD.Definition> = {};
+	const footnotes: Record<string, MD.FootnoteDefinition> = {};
 	const walker = new Walker<AllNodeMap>();
 	walker.on("enter", "yaml", (node, ctx) => {
 		// Extract YAML frontmatter as a string for later parsing
@@ -130,22 +130,22 @@ export function parseMarkdown(markdown: string, options: ParseOptions = {}) {
 		}
 	});
 	walker.on("enter", "definition", (node, ctx) => {
-		setWhenUnset(definitions, node.identifier, node);
+		setWhenUnset(definitions, node.identifier, node as unknown as MD.Definition);
 		ctx.remove();
 	});
 	walker.on("enter", "footnoteDefinition", (node, ctx) => {
-		setWhenUnset(footnotes, node.identifier, node);
+		setWhenUnset(footnotes, node.identifier, node as unknown as MD.FootnoteDefinition);
 		ctx.remove();
 	});
 	const newRoot = walker.execute(ast);
 	return {
 		type: "root",
-		children: (newRoot as Root).children,
+		children: (newRoot as Root).children as unknown as MD.Nodes[],
 		pos: newRoot.pos,
 		meta: metaString,
 		definitions,
 		footnotes,
-	} as MD.Document;
+	};
 }
 
 function positionToPos(position: Position): [start: number, end: number] {

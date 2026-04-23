@@ -19,6 +19,7 @@ jobs:
 
       - run: |
           bun install 
+          bunx tsc --noEmit
           bun test
           bun run build
 
