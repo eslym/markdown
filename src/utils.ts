@@ -1,4 +1,4 @@
-import type { Root, RootContent, RootContentMap } from "mdast";
+import type { RootContentMap } from "mdast";
 import type { MD } from "./types";
 
 export function setWhenUnset(
