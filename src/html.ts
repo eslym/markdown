@@ -1,7 +1,6 @@
 import { setWhenUnset } from "./utils";
 import { decode } from "he";
 import type { Extension as FromMarkdownExtension } from "mdast-util-from-markdown";
-import type { Extension as MicromarkExtension } from "micromark-util-types";
 import type { Element, Parent, Root } from "mdast";
 
 const tagStart = /^<\/?([a-zA-Z][a-zA-Z0-9-]*)/g;
@@ -115,19 +114,19 @@ const disallowedListItemTags = new Set(["li"]);
 const disallowedAnchorTags = new Set(["a"]);
 const droppedStructuralTags = new Set(["html", "head", "body"]);
 
-export function disallowedInParagraph(tagName: string): boolean {
+function disallowedInParagraph(tagName: string): boolean {
 	return disallowedParagraphTags.has(tagName.toLowerCase());
 }
 
-export function disallowedInHeading(tagName: string): boolean {
+function disallowedInHeading(tagName: string): boolean {
 	return disallowedHeadingTags.has(tagName.toLowerCase());
 }
 
-export function disallowedInListItem(tagName: string): boolean {
+function disallowedInListItem(tagName: string): boolean {
 	return disallowedListItemTags.has(tagName.toLowerCase());
 }
 
-export function disallowedInAnchor(tagName: string): boolean {
+function disallowedInAnchor(tagName: string): boolean {
 	return disallowedAnchorTags.has(tagName.toLowerCase());
 }
 
@@ -283,10 +282,6 @@ export function* tokenizeHTML(html: string): Generator<TagOpen | TagClose | Comm
 
 export interface HtmlFromMarkdownOptions {
 	warnForDisallowedElement?: boolean;
-}
-
-export function htmlMicromark(): MicromarkExtension {
-	return {};
 }
 
 export function htmlFromMarkdown(options: HtmlFromMarkdownOptions = {}): FromMarkdownExtension {

@@ -12,7 +12,7 @@ import { directiveFromMarkdown } from "mdast-util-directive";
 import type { Root, RootContent, RootContentMap } from "mdast";
 import type { Position } from "unist";
 import { Walker } from "./walker";
-import { htmlFromMarkdown, htmlMicromark } from "./html";
+import { htmlFromMarkdown } from "./html";
 import { setWhenUnset } from "./utils";
 import { buildDisableExtensions } from "./disables";
 import type { MD } from "./types";
@@ -85,7 +85,6 @@ function prepareExtensions(options: ParseOptions = {}) {
 		extensionOptions.mdastExtensions!.push(directiveFromMarkdown());
 	}
 	if (syntax.html !== false) {
-		extensionOptions.extensions!.push(htmlMicromark());
 		extensionOptions.mdastExtensions!.push(
 			htmlFromMarkdown({
 				warnForDisallowedElement: options.warning?.disallowedElement !== false,
