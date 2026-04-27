@@ -16,7 +16,7 @@ export namespace MD {
 		value: string;
 	}
 
-	export interface BlockQuote extends Node {
+	export interface BlockQuote extends Parent {
 		type: "blockquote";
 	}
 
