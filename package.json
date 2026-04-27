@@ -1,7 +1,5 @@
 {
 	"name": "@eslym/markdown",
-	"description": "A markdown parser for my own use. Built on top of micromark and mdast.",
-	"module": "src/index.ts",
 	"author": {
 		"name": "0nepeop1e",
 		"email": "engshun.lim@gmail.com",
@@ -11,21 +9,7 @@
 		"type": "git",
 		"url": "git+https://github.com/eslym/markdown.git"
 	},
-	"scripts": {
-		"build": "bun --bun build.ts",
-		"test": "bun test",
-		"format": "prettier --write ."
-	},
-	"exports": {
-		".": {
-			"import": "./dist/index.mjs",
-			"require": "./dist/index.cjs",
-			"types": "./dist/index.d.ts"
-		}
-	},
-	"files": [
-		"./dist/**"
-	],
+	"module": "dist/index.mjs",
 	"devDependencies": {
 		"@types/bun": "latest",
 		"@types/he": "^1.2.3",
@@ -47,6 +31,24 @@
 	},
 	"peerDependencies": {
 		"typescript": "^5"
+	},
+	"exports": {
+		".": {
+			"browser": "./dist/browser/index.mjs",
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.cjs",
+			"default": "./dist/index.mjs",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"description": "A markdown parser for my own use. Built on top of micromark and mdast.",
+	"files": [
+		"./dist/**"
+	],
+	"scripts": {
+		"build": "bun --bun build.ts",
+		"test": "bun test",
+		"format": "prettier --write ."
 	},
 	"type": "module"
 }
