@@ -157,13 +157,13 @@ export namespace MD {
 		attributes?: Nullable<Record<string, Nullable<string>>>;
 	}
 
-	export interface leafDirective extends Parent {
+	export interface LeafDirective extends Parent {
 		type: "leafDirective";
 		name: string;
 		attributes?: Nullable<Record<string, Nullable<string>>>;
 	}
 
-	export interface textDirective extends Parent {
+	export interface TextDirective extends Parent {
 		type: "textDirective";
 		name: string;
 		attributes?: Nullable<Record<string, Nullable<string>>>;
@@ -198,8 +198,8 @@ export namespace MD {
 		element: Element;
 		comment: Comment;
 		containerDirective: ContainerDirective;
-		leafDirective: leafDirective;
-		textDirective: textDirective;
+		leafDirective: LeafDirective;
+		textDirective: TextDirective;
 	}
 
 	export type Nodes = NodeMap[keyof NodeMap];
