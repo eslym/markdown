@@ -53,6 +53,7 @@ export namespace MD {
 	export interface FootnoteReference extends Node {
 		type: "footnoteReference";
 		identifier: string;
+		label?: Nullable<string>;
 	}
 
 	export interface Heading extends Parent {
